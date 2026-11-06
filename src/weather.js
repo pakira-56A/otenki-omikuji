@@ -34,8 +34,9 @@ export const parseForecast = (data, regionCode, regionName) => {
   // 気温予報。3番目のデータがないなら、2番目のデータを使う
   const temperatureForecast = timeSeriesData[2] || timeSeriesData[1]
 
-  const forecastDate = new Date(weatherForecast.timeDefines[0])
-  assertShape(!Number.isNaN(forecastDate.getTime()), "日付が読めない")
+  // 気象庁の日時は日本時間（例 2026-11-06T05:00:00+09:00）。UTCに直すと日付がずれるので、先頭の日付部分をそのまま使う
+  const dateText = String(weatherForecast.timeDefines[0]).slice(0, 10)
+  assertShape(/^\d{4}-\d{2}-\d{2}$/.test(dateText) && !Number.isNaN(Date.parse(dateText)), "日付が読めない")
 
   // 地域に対応する天気コードを探す。見つからなければ先頭の地域を使う
   const area = weatherForecast.areas.find((item) => matchesRegion(item, regionName, regionCode))
@@ -61,7 +62,7 @@ export const parseForecast = (data, regionCode, regionName) => {
 
   return {
     region: regionName,
-    date: forecastDate.toISOString().split("T")[0],
+    date: dateText,
     weather: getWeatherTextFromCode(weatherCode),
     weatherCode,
     temperature: { max: maxTemp, min: minTemp },
